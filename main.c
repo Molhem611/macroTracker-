@@ -16,6 +16,8 @@ struct User
     int carbs;
     int fat;
 };
+
+///
 // Food struct for future use, not currently used in the program
 struct Food
 {
