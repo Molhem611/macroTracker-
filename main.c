@@ -26,6 +26,7 @@ struct Food
     int fat;
 };
 
+
 // ---------------- FIND FOOD ----------------
 int findFood()
 {
@@ -50,7 +51,7 @@ int findFood()
         return EXIT_FAILURE;
     }
 
-    printf("Searching for \"%s\" in %s...\n", search_name, filename);
+    printf("Searching for \"%s\" in %s...\n\n", search_name, filename);
 
     int found = 0;
 
@@ -91,6 +92,7 @@ void createUser()
 
     file_ptr = fopen(filename, "r");
     printf("Searching for \"%s\" in %s...\n", p.email, filename);
+    printf("Not found: %s does not exist in file\n\n", search_name);
 
     char file_name[50];
 
