@@ -5,6 +5,7 @@
 #define BUFFER_SIZE 1024
 #define NAME_SIZE 100
 
+// ---------------- STRUCTS ----------------
 struct User
 {
     char email[200];
@@ -15,7 +16,7 @@ struct User
     int carbs;
     int fat;
 };
-
+// Food struct for future use, not currently used in the program
 struct Food
 {
     char name[50];
