@@ -78,16 +78,15 @@ void createUser() {
     printf("Enter email: ");
     fgets(u.email, sizeof(u.email), stdin);
     trimNewline(u.email);
-    
+
     while (strchr(u.email, '@') == NULL) {
         printf("Invalid email! Must contain '@'. Try again: ");
         fgets(u.email, sizeof(u.email), stdin);
         trimNewline(u.email);
-}
+    }
 
     rewind(file);
 
-    // check if user exists
     while (fgets(buffer, BUFFER_SIZE, file)) {
         char existingEmail[200];
         sscanf(buffer, "%[^,]", existingEmail);
@@ -177,6 +176,51 @@ int login(struct User *u) {
     return 0;
 }
 
+// ---------------- VIEW LOGS ----------------
+void viewLogs(struct User *u) {
+    FILE *file = fopen("logs.txt", "r");
+    char buffer[BUFFER_SIZE];
+
+    if (!file) {
+        printf("No logs found.\n");
+        return;
+    }
+
+    int totalCalories = 0;
+    int totalProtein = 0;
+    int totalCarbs = 0;
+    int totalFat = 0;
+
+    printf("\n--- YOUR DAILY LOGS ---\n");
+
+    while (fgets(buffer, BUFFER_SIZE, file)) {
+        char email[200], foodName[50];
+        int calories, protein, carbs, fat;
+
+        sscanf(buffer, "%[^,],%[^,],%d,%d,%d,%d",
+               email, foodName,
+               &calories, &protein, &carbs, &fat);
+
+        if (strcmp(email, u->email) == 0) {
+            printf("Food: %s | Cal: %d | P: %d | C: %d | F: %d\n",
+                   foodName, calories, protein, carbs, fat);
+
+            totalCalories += calories;
+            totalProtein += protein;
+            totalCarbs += carbs;
+            totalFat += fat;
+        }
+    }
+
+    fclose(file);
+
+    printf("\n--- TOTAL ---\n");
+    printf("Calories: %d\n", totalCalories);
+    printf("Protein: %d\n", totalProtein);
+    printf("Carbs: %d\n", totalCarbs);
+    printf("Fat: %d\n", totalFat);
+}
+
 // ---------------- MAIN ----------------
 int main() {
     struct User currentUser;
@@ -185,6 +229,7 @@ int main() {
 
     char choice[10];
 
+    // -------- LOGIN LOOP --------
     while (!loggedIn) {
         printf("\n1. Login\n2. Create Account\nChoice: ");
         fgets(choice, sizeof(choice), stdin);
@@ -196,12 +241,9 @@ int main() {
             } else {
                 printf("Login failed!\n");
             }
-        }
-        else if (choice[0] == '2') {
+        } else if (choice[0] == '2') {
             createUser();
-        }
-
-        else {
+        } else {
             printf("Invalid option\n");
         }
     }
@@ -213,23 +255,43 @@ int main() {
 
         if (choice[0] == '1') {
             if (findFood(&food)) {
+
                 printf("\nFound: %s\nCalories: %d\nProtein: %d\nCarbs: %d\nFat: %d\n",
                        food.name, food.calories, food.protein, food.carbs, food.fat);
+
+                FILE *logFile = fopen("logs.txt", "a");
+                if (!logFile) {
+                    printf("Error opening logs file\n");
+                    continue;
+                }
+
+                fprintf(logFile, "%s,%s,%d,%d,%d,%d\n",
+                        currentUser.email,
+                        food.name,
+                        food.calories,
+                        food.protein,
+                        food.carbs,
+                        food.fat);
+
+                fclose(logFile);
+
+                printf("Food logged successfully!\n");
+
             } else {
                 printf("Food not found\n");
             }
-        }
-        else if (choice[0] == '2') {
+
+        } else if (choice[0] == '2') {
             printf("View Today (coming next)\n");
-        }
-        else if (choice[0] == '3') {
-            printf("View Logs (coming next)\n");
-        }
-        else if (choice[0] == '4') {
+
+        } else if (choice[0] == '3') {
+            viewLogs(&currentUser);
+
+        } else if (choice[0] == '4') {
             printf("Goodbye!\n");
             break;
-        }
-        else {
+
+        } else {
             printf("Invalid option\n");
         }
     }
