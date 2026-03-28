@@ -78,6 +78,12 @@ void createUser() {
     printf("Enter email: ");
     fgets(u.email, sizeof(u.email), stdin);
     trimNewline(u.email);
+    
+    while (strchr(u.email, '@') == NULL) {
+        printf("Invalid email! Must contain '@'. Try again: ");
+        fgets(u.email, sizeof(u.email), stdin);
+        trimNewline(u.email);
+}
 
     rewind(file);
 
@@ -194,6 +200,7 @@ int main() {
         else if (choice[0] == '2') {
             createUser();
         }
+
         else {
             printf("Invalid option\n");
         }

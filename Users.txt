@@ -1,4 +1,1 @@
-
-ta, mo, 1223, 123, 123, 123, 123
-mo, molhem, 1234, 123, 123, 123, 123
-tobycraig126@gmail.com, Toby, Discozoo!12, 12, 3, 4, 5
+tobycraig126@gmail.com,toby,Discozoo!12,100,40,40,40
