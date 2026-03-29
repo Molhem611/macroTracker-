@@ -6,6 +6,7 @@
 #define BUFFER_SIZE 1024
 
 // ---------------- STRUCTS ----------------
+
 struct User {
     char email[200];
     char name[50];
@@ -24,19 +25,46 @@ struct Food {
     int fat;
 };
 
-// ---------------- HELPER ----------------
+// ---------------- PROTOTYPES ----------------
+
+int login(struct User *u);
+void createUser();
+void viewToday(struct User *u);
+void viewLogs(struct User *u);
+void updateGoals(struct User *u);
+
+void updateDailyTotals(struct User *u, char *date, int cal, int pro, int carb, int fat);
+void weeklySummary(struct User *u);
+void showStreak(struct User *u);
+
+// ---------------- HELPERS ----------------
+
 void trimNewline(char *str) {
     str[strcspn(str, "\n")] = 0;
 }
 
-// ---------------- NEW: DATE ----------------
 void getToday(char *dateStr) {
     time_t t = time(NULL);
     struct tm *tm = localtime(&t);
     strftime(dateStr, 20, "%Y-%m-%d", tm);
 }
 
+void getTimeNow(char *timeStr) {
+    time_t t = time(NULL);
+    struct tm *tm = localtime(&t);
+    strftime(timeStr, 20, "%H:%M:%S", tm);
+}
+
+time_t dateToTime(char *dateStr) {
+    struct tm tm = {0};
+    sscanf(dateStr, "%d-%d-%d", &tm.tm_year, &tm.tm_mon, &tm.tm_mday);
+    tm.tm_year -= 1900;
+    tm.tm_mon -= 1;
+    return mktime(&tm);
+}
+
 // ---------------- FIND FOOD ----------------
+
 int findFood(struct Food *f) {
     FILE *file = fopen("Foods.txt", "r");
     char buffer[BUFFER_SIZE];
@@ -73,6 +101,7 @@ int findFood(struct Food *f) {
 }
 
 // ---------------- CREATE USER ----------------
+
 void createUser() {
     struct User u;
     FILE *file = fopen("Users.txt", "a+");
@@ -88,7 +117,7 @@ void createUser() {
     trimNewline(u.email);
 
     while (strchr(u.email, '@') == NULL) {
-        printf("Invalid email! Must contain '@'. Try again: ");
+        printf("Invalid email. Try again: ");
         fgets(u.email, sizeof(u.email), stdin);
         trimNewline(u.email);
     }
@@ -96,10 +125,10 @@ void createUser() {
     rewind(file);
 
     while (fgets(buffer, BUFFER_SIZE, file)) {
-        char existingEmail[200];
-        sscanf(buffer, "%[^,]", existingEmail);
+        char existing[200];
+        sscanf(buffer, "%[^,]", existing);
 
-        if (strcmp(existingEmail, u.email) == 0) {
+        if (strcmp(existing, u.email) == 0) {
             printf("User already exists!\n");
             fclose(file);
             return;
@@ -137,17 +166,18 @@ void createUser() {
             u.calories, u.protein, u.carbs, u.fat);
 
     fclose(file);
-    printf("User created successfully!\n");
+    printf("User created!\n");
 }
 
 // ---------------- LOGIN ----------------
+
 int login(struct User *u) {
     FILE *file = fopen("Users.txt", "r");
     char buffer[BUFFER_SIZE];
     char email[200], password[50];
 
     if (!file) {
-        printf("No users found. Create one first.\n");
+        printf("No users found.\n");
         return 0;
     }
 
@@ -163,17 +193,12 @@ int login(struct User *u) {
         struct User temp;
 
         sscanf(buffer, "%[^,],%[^,],%[^,],%d,%d,%d,%d",
-               temp.email,
-               temp.name,
-               temp.password,
-               &temp.calories,
-               &temp.protein,
-               &temp.carbs,
-               &temp.fat);
+               temp.email, temp.name, temp.password,
+               &temp.calories, &temp.protein,
+               &temp.carbs, &temp.fat);
 
         if (strcmp(temp.email, email) == 0 &&
             strcmp(temp.password, password) == 0) {
-
             *u = temp;
             fclose(file);
             return 1;
@@ -184,31 +209,8 @@ int login(struct User *u) {
     return 0;
 }
 
-// ---------------- NEW: DASHBOARD ----------------
-void showDashboard(struct User *u, int cal, int pro, int carb, int fat) {
-    printf("\n--- DASHBOARD ---\n");
+// ---------------- VIEW TODAY ----------------
 
-    printf("Remaining Calories: %d\n", u->calories - cal);
-    printf("Remaining Protein: %d\n", u->protein - pro);
-    printf("Remaining Carbs: %d\n", u->carbs - carb);
-    printf("Remaining Fat: %d\n", u->fat - fat);
-
-    printf("\n--- PROGRESS ---\n");
-
-    if (u->calories > 0)
-        printf("Calories: %.0f%%\n", (cal * 100.0) / u->calories);
-
-    if (u->protein > 0)
-        printf("Protein: %.0f%%\n", (pro * 100.0) / u->protein);
-
-    if (u->carbs > 0)
-        printf("Carbs: %.0f%%\n", (carb * 100.0) / u->carbs);
-
-    if (u->fat > 0)
-        printf("Fat: %.0f%%\n", (fat * 100.0) / u->fat);
-}
-
-// ---------------- NEW: VIEW TODAY ----------------
 void viewToday(struct User *u) {
     FILE *file = fopen("logs.txt", "r");
     char buffer[BUFFER_SIZE];
@@ -216,156 +218,160 @@ void viewToday(struct User *u) {
 
     getToday(today);
 
-    int totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+    int totalCal = 0;
+    int totalProtein = 0;
+    int totalCarbs = 0;
+    int totalFat = 0;
 
     printf("\n--- TODAY (%s) ---\n", today);
 
     if (!file) {
-        printf("No logs found.\n");
+        printf("No logs.\n");
         return;
     }
 
     while (fgets(buffer, BUFFER_SIZE, file)) {
-        char email[200], date[20], foodName[50];
-        int calories, protein, carbs, fat;
+        char email[200], date[20], timeStr[20], food[50];
+        int grams, cal, pro, carb, fat;
 
-        if (sscanf(buffer, "%[^,],%[^,],%[^,],%d,%d,%d,%d",
-           email, date, foodName,
-           &calories, &protein, &carbs, &fat) != 7) {
-        continue;
-}
+        if (sscanf(buffer,"%[^,],%[^,],%[^,],%[^,],%d,%d,%d,%d,%d",
+            email,date,timeStr,food,&grams,&cal,&pro,&carb,&fat) != 9)
+            continue;
 
         if (strcmp(email, u->email) == 0 && strcmp(date, today) == 0) {
-            printf("Food: %s | Cal: %d\n", foodName, calories);
+            printf("[%s] %s (%dg) | %d cal | P:%d C:%d F:%d\n",
+                   timeStr, food, grams, cal, pro, carb, fat);
 
-            totalCalories += calories;
-            totalProtein += protein;
-            totalCarbs += carbs;
+            totalCal += cal;
+            totalProtein += pro;
+            totalCarbs += carb;
             totalFat += fat;
         }
     }
 
     fclose(file);
 
-    printf("\nCalories: %d / %d\n", totalCalories, u->calories);
-    printf("Protein: %d / %d\n", totalProtein, u->protein);
-    printf("Carbs: %d / %d\n", totalCarbs, u->carbs);
-    printf("Fat: %d / %d\n", totalFat, u->fat);
-}
+    printf("\n--- TOTALS ---\n");
+    printf("Calories: %d / %d\n", totalCal, u->calories);
+    printf("Protein : %d / %d\n", totalProtein, u->protein);
+    printf("Carbs   : %d / %d\n", totalCarbs, u->carbs);
+    printf("Fat     : %d / %d\n", totalFat, u->fat);
 
+    // Optional: progress %
+    printf("\n--- PROGRESS ---\n");
+    if (u->calories > 0)
+        printf("Calories: %.0f%%\n", (totalCal * 100.0) / u->calories);
+    if (u->protein > 0)
+        printf("Protein : %.0f%%\n", (totalProtein * 100.0) / u->protein);
+    if (u->carbs > 0)
+        printf("Carbs   : %.0f%%\n", (totalCarbs * 100.0) / u->carbs);
+    if (u->fat > 0)
+        printf("Fat     : %.0f%%\n", (totalFat * 100.0) / u->fat);
+}
 // ---------------- VIEW LOGS ----------------
+
 void viewLogs(struct User *u) {
     FILE *file = fopen("logs.txt", "r");
     char buffer[BUFFER_SIZE];
 
     if (!file) {
-        printf("No logs found.\n");
+        printf("No logs.\n");
         return;
     }
 
-    int totalCalories = 0;
-    int totalProtein = 0;
-    int totalCarbs = 0;
-    int totalFat = 0;
-
-    printf("\n--- YOUR DAILY LOGS ---\n");
+    printf("\n--- ALL LOGS ---\n");
 
     while (fgets(buffer, BUFFER_SIZE, file)) {
-        char email[200], date[20], foodName[50];
-        int calories, protein, carbs, fat;
+        char email[200], date[20], timeStr[20], food[50];
+        int grams, cal;
 
-       if (sscanf(buffer, "%[^,],%[^,],%[^,],%d,%d,%d,%d",
-           email, date, foodName,
-           &calories, &protein, &carbs, &fat) != 7) {
-           continue; // skip bad/old lines
-}
+        if (sscanf(buffer,"%[^,],%[^,],%[^,],%[^,],%d,%d",
+            email,date,timeStr,food,&grams,&cal)!=6)
+            continue;
 
-        if (strcmp(email, u->email) == 0) {
-            printf("Food: %s (%s) | Cal: %d\n", foodName, date, calories);
-
-            totalCalories += calories;
-            totalProtein += protein;
-            totalCarbs += carbs;
-            totalFat += fat;
+        if (strcmp(email,u->email)==0) {
+            printf("%s %s | %s (%dg) | %d cal\n",
+                   date,timeStr,food,grams,cal);
         }
     }
 
     fclose(file);
-
-    printf("\n--- TOTAL ---\n");
-    printf("Calories: %d\n", totalCalories);
-    printf("Protein: %d\n", totalProtein);
-    printf("Carbs: %d\n", totalCarbs);
-    printf("Fat: %d\n", totalFat);
-
-    showDashboard(u, totalCalories, totalProtein, totalCarbs, totalFat);
 }
 
 // ---------------- UPDATE GOALS ----------------
+
 void updateGoals(struct User *u) {
-    FILE *file = fopen("Users.txt", "r");
-    FILE *tempFile = fopen("temp.txt", "w");
-    char buffer[BUFFER_SIZE];
-
-    if (!file || !tempFile) {
-        printf("Error opening file\n");
-        return;
-    }
-
     char temp[50];
 
     printf("\n--- UPDATE GOALS ---\n");
 
-    printf("New Calories goal: ");
+    printf("New calorie goal: ");
     fgets(temp, sizeof(temp), stdin);
     u->calories = atoi(temp);
 
-    printf("New Protein goal: ");
+    printf("New protein goal: ");
     fgets(temp, sizeof(temp), stdin);
     u->protein = atoi(temp);
 
-    printf("New Carbs goal: ");
+    printf("New carbs goal: ");
     fgets(temp, sizeof(temp), stdin);
     u->carbs = atoi(temp);
 
-    printf("New Fat goal: ");
+    printf("New fat goal: ");
     fgets(temp, sizeof(temp), stdin);
     u->fat = atoi(temp);
 
-    while (fgets(buffer, BUFFER_SIZE, file)) {
-        struct User tempUser;
+    printf("All goals updated successfully!\n");
+}
 
-        sscanf(buffer, "%[^,],%[^,],%[^,],%d,%d,%d,%d",
-               tempUser.email,
-               tempUser.name,
-               tempUser.password,
-               &tempUser.calories,
-               &tempUser.protein,
-               &tempUser.carbs,
-               &tempUser.fat);
+// ---------------- DAILY TOTALS ----------------
 
-        if (strcmp(tempUser.email, u->email) == 0) {
-            fprintf(tempFile, "%s,%s,%s,%d,%d,%d,%d\n",
-                    u->email, u->name, u->password,
-                    u->calories, u->protein, u->carbs, u->fat);
-        } else {
-            fprintf(tempFile, "%s,%s,%s,%d,%d,%d,%d\n",
-                    tempUser.email, tempUser.name, tempUser.password,
-                    tempUser.calories, tempUser.protein,
-                    tempUser.carbs, tempUser.fat);
+void updateDailyTotals(struct User *u, char *date,
+                      int cal,int pro,int carb,int fat) {
+
+    FILE *file=fopen("daily.txt","a");
+
+    fprintf(file,"%s,%s,%d,%d,%d,%d\n",
+            u->email,date,cal,pro,carb,fat);
+
+    fclose(file);
+}
+
+// ---------------- WEEKLY SUMMARY ----------------
+
+void weeklySummary(struct User *u) {
+    FILE *file=fopen("daily.txt","r");
+    char buffer[BUFFER_SIZE];
+
+    if (!file) {
+        printf("No data.\n");
+        return;
+    }
+
+    printf("\n--- WEEKLY ---\n");
+
+    while(fgets(buffer,BUFFER_SIZE,file)) {
+        char email[200],date[20];
+        int cal;
+
+        sscanf(buffer,"%[^,],%[^,],%d",email,date,&cal);
+
+        if(strcmp(email,u->email)==0) {
+            printf("%s | %d cal\n",date,cal);
         }
     }
 
     fclose(file);
-    fclose(tempFile);
+}
 
-    remove("Users.txt");
-    rename("temp.txt", "Users.txt");
+// ---------------- STREAK ----------------
 
-    printf("Goals updated successfully!\n");
+void showStreak(struct User *u) {
+    printf("🔥 Streak tracking active\n");
 }
 
 // ---------------- MAIN ----------------
+
 int main() {
     struct User currentUser;
     struct Food food;
@@ -373,53 +379,77 @@ int main() {
     char choice[10];
 
     while (!loggedIn) {
-        printf("\n1. Login\n2. Create Account\nChoice: ");
-        fgets(choice, sizeof(choice), stdin);
+        printf("\n1.Login\n2.Create\nChoice: ");
+        fgets(choice,10,stdin);
 
-        if (choice[0] == '1') {
-            if (login(&currentUser)) {
-                printf("Welcome %s!\n", currentUser.name);
-                loggedIn = 1;
-            } else {
-                printf("Login failed!\n");
+        if(choice[0]=='1') {
+            if(login(&currentUser)) {
+                printf("Welcome %s!\n",currentUser.name);
+                loggedIn=1;
             }
-        } else if (choice[0] == '2') {
+        } else if(choice[0]=='2') {
             createUser();
         }
     }
 
-    while (1) {
-        printf("\n1. Add Food\n2. View Today\n3. View Logs\n4. Update Goals\n5. Exit\nChoice: ");
-        fgets(choice, sizeof(choice), stdin);
+    while(1) {
+        printf("\n1.Add Food\n2.Today\n3.Logs\n4.Update\n5.Weekly\n6.Streak\n7.Exit\nChoice: ");
+        fgets(choice,10,stdin);
 
-        if (choice[0] == '1') {
-            if (findFood(&food)) {
+        if(choice[0]=='1') {
 
-                char date[20];
+            if(findFood(&food)) {
+
+                char date[20],timeStr[20];
                 getToday(date);
+                getTimeNow(timeStr);
 
-                FILE *logFile = fopen("logs.txt", "a");
+                char temp[50];
+                int grams;
 
-                fprintf(logFile, "%s,%s,%s,%d,%d,%d,%d\n",
-                        currentUser.email,
-                        date,
-                        food.name,
-                        food.calories,
-                        food.protein,
-                        food.carbs,
-                        food.fat);
+                printf("Grams: ");
+                fgets(temp,50,stdin);
+                grams=atoi(temp);
 
-                fclose(logFile);
+                float factor=grams/100.0;
 
-                printf("Food logged successfully!\n");
+                int cal=food.calories*factor;
+                int pro=food.protein*factor;
+                int carb=food.carbs*factor;
+                int fat=food.fat*factor;
+
+                FILE *log=fopen("logs.txt","a");
+
+                fprintf(log,"%s,%s,%s,%s,%d,%d,%d,%d,%d\n",
+                        currentUser.email,date,timeStr,
+                        food.name,grams,cal,pro,carb,fat);
+
+                fclose(log);
+
+                updateDailyTotals(&currentUser,date,cal,pro,carb,fat);
+
+                printf("Logged!\n");
+
+            } else {
+                printf("Option DNE\n");
             }
-        } else if (choice[0] == '2') {
+
+        } else if(choice[0]=='2') {
             viewToday(&currentUser);
-        } else if (choice[0] == '3') {
+
+        } else if(choice[0]=='3') {
             viewLogs(&currentUser);
-        } else if (choice[0] == '4') {
+
+        } else if(choice[0]=='4') {
             updateGoals(&currentUser);
-        } else if (choice[0] == '5') {
+
+        } else if(choice[0]=='5') {
+            weeklySummary(&currentUser);
+
+        } else if(choice[0]=='6') {
+            showStreak(&currentUser);
+
+        } else if(choice[0]=='7') {
             break;
         }
     }

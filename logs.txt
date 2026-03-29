@@ -1,7 +1,16 @@
+
 tobycraig126@gmail.com,apple,95,0,25,0
 tobycraig126@gmail.com,apple,95,0,25,0
 tobycraig702@gmail.com,apple,95,0,25,0
 tobycraig126@gmail.com,salmon,250,22,0,15
 tobycraig126@gmail.com,apple,95,0,25,0
 tobycraig126@gmail.com,2026-03-28,apple,95,0,25,0
+<<<<<<< HEAD
 tobycraig126@gmail.com,2026-03-29,apple,95,0,25,0
+=======
+molham.tahina@gmail.com,2026-03-29,granola,200,5,30,8
+molham.tahina@gmail.com,2026-03-29,egg,70,6,1,5
+molham.tahina@gmail.com,2026-03-29,11:04:01,egg,200,140,12,2,10
+>>>>>>> 398815427267b41f3e1671bc14e6c5804d749638
+tobycraig126@gmail.com,2026-03-29,15:12:37,apple,50,47,0,12,0
+tobycraig126@gmail.com,2026-03-29,15:15:44,chicken_breast,1000,2000,300,0,50
