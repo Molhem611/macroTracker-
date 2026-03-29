@@ -189,6 +189,8 @@ int login(struct User *u) {
     fgets(password, sizeof(password), stdin);
     trimNewline(password);
 
+    int emailFound = 0;
+
     while (fgets(buffer, BUFFER_SIZE, file)) {
         struct User temp;
 
@@ -197,15 +199,27 @@ int login(struct User *u) {
                &temp.calories, &temp.protein,
                &temp.carbs, &temp.fat);
 
-        if (strcmp(temp.email, email) == 0 &&
-            strcmp(temp.password, password) == 0) {
-            *u = temp;
-            fclose(file);
-            return 1;
+        if (strcmp(temp.email, email) == 0) {
+            emailFound = 1;
+
+            if (strcmp(temp.password, password) == 0) {
+                *u = temp;
+                fclose(file);
+                return 1;
+            } else {
+                printf("Incorrect password.\n");
+                fclose(file);
+                return 0;
+            }
         }
     }
 
     fclose(file);
+
+    if (!emailFound) {
+        printf("Email not registered.\n");
+    }
+
     return 0;
 }
 
