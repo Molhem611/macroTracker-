@@ -2,7 +2,7 @@ This project is a command-line based nutrition tracking system written in C.
 It allows users to create an account, log in, and track their daily food intake including calories, protein, carbohydrates, and fat. 
 The goal of this program is to help users monitor their diet in a simple and efficient way.
 
-🔧 Features
+Features
 User System
 Create a new account with email, name, password, and macro goals
 Login with existing credentials
@@ -24,13 +24,13 @@ Weekly Summary
 Displays calorie totals per day
 
 
-▶️ How to Run 
+How to Run 
 1.
 compile to run:
     run make
 2. run ./tracker
 
-📌 Usage Notes
+Usage Notes
 Create a Account before logging in
 Check Foods.txt for available foods before logging entries
 If a food is not in the file, it will not be recognized
